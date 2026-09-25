@@ -62,6 +62,7 @@ public sealed class SpecificationParser(ISectionClassifier? sections = null)
             }
         }
         Flush();
+        OutputRowFormatter.Apply(result.Rows);
         foreach (var item in result.Rows.Where(r => r.RowType == SpecificationRowType.Item))
         {
             if (item.Name.Length == 0) Warn(result, item, "Не определено наименование.");

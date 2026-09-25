@@ -14,11 +14,14 @@ public sealed class ExcelExporter
         var sheet = book.AddWorksheet("Спецификация");
         for (int i = 0; i < Headers.Length; i++) sheet.Cell(1, i + 1).Value = Headers[i];
         int row = 2;
+        int position = 0;
         foreach (var item in rows)
         {
+            string outputPosition = OutputRowFormatter.NextPosition(item, ref position);
+            string outputName = TextNormalizer.Name(item.Name);
             object?[] values = item.RowType == SpecificationRowType.SectionHeader
-                ? [null, item.Name, null, null, null, null, null, null, null]
-                : [item.Position, item.Name, item.TypeMark, item.ProductCode, item.Supplier, item.Unit, item.Quantity, item.UnitWeightKg, item.Note];
+                ? [null, outputName, null, null, null, null, null, null, null]
+                : [outputPosition, outputName, item.TypeMark, item.ProductCode, item.Supplier, item.Unit, item.Quantity, item.UnitWeightKg, item.Note];
             for (int col = 0; col < values.Length; col++)
             {
                 if (values[col] is null) continue;

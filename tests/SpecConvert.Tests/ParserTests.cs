@@ -33,14 +33,14 @@ public sealed class ParserTests
     {
         var s = Sheet(); Row(s,2,"ШУ1","Шкаф", "Тип"); Row(s,3,"ШУ3","с приборами", "ГОСТ", "шт.",2d); Row(s,4,name:"и кабелями");
         var i = Assert.Single(new SpecificationParser().Parse([s]).Rows);
-        Assert.Equal("ШУ1, ШУ3",i.Position); Assert.Equal("Шкаф с приборами и кабелями",i.Name); Assert.Equal("Тип ГОСТ",i.TypeMark);
+        Assert.Equal("1",i.Position); Assert.Equal("Шкаф с приборами и кабелями",i.Name); Assert.Equal("Тип ГОСТ",i.TypeMark);
     }
     [Fact] public void VariantsInheritOnlyWithinBlock()
     {
         var s = Sheet(); Row(s,2,"3","Стойка"); Row(s,3,type:"МШК1",unit:"шт.",qty:13d); Row(s,4,type:"МШК2",qty:88d);
         Row(s,5,"4","Другая"); Row(s,6,type:"Б",qty:1d);
         var r = new SpecificationParser().Parse([s]);
-        Assert.Equal(3,r.ItemCount); Assert.Equal("3",r.Rows[1].Position); Assert.Equal("Стойка",r.Rows[1].Name); Assert.Equal("шт.",r.Rows[1].Unit); Assert.Equal("",r.Rows[2].Unit);
+        Assert.Equal(3,r.ItemCount); Assert.Equal("2",r.Rows[1].Position); Assert.Equal("Стойка",r.Rows[1].Name); Assert.Equal("шт.",r.Rows[1].Unit); Assert.Equal("",r.Rows[2].Unit);
     }
     [Fact] public void SectionIsNotContinuation()
     {
@@ -56,7 +56,7 @@ public sealed class ParserTests
     [Fact] public void ContextCrossesSheets()
     {
         var a = Sheet("A"); var b = Sheet("B"); Row(a,2,"12","Фиксатор"); Row(a,3,type:"ФП",unit:"шт.",qty:1d); Row(b,2,type:"ФО",qty:2d);
-        var r = new SpecificationParser().Parse([a,b]); Assert.Equal("Фиксатор",r.Rows[1].Name); Assert.Equal("12",r.Rows[1].Position); Assert.Equal("B",r.Rows[1].SourceSheet);
+        var r = new SpecificationParser().Parse([a,b]); Assert.Equal("Фиксатор",r.Rows[1].Name); Assert.Equal("2",r.Rows[1].Position); Assert.Equal("B",r.Rows[1].SourceSheet);
     }
     [Fact] public void MergedQuantityCountedOnceAndNumbersPreserved()
     {
@@ -83,13 +83,18 @@ public sealed class ParserTests
         // Independent control for the inspected fixtures: BO below the header, above the drawing stamp.
         int expected = source.Sum(s => s.Cells.Values.Count(c=> c.Column == 67 && c.Row > 8 && c.Row < 104 && c.Value is not null && !string.IsNullOrWhiteSpace(c.Value.ToString())));
         Assert.Equal(sheets,result.SheetsProcessed); Assert.Equal(expected,result.ItemCount); Assert.Equal(expected,result.QuantityAnchors);
+        Assert.Equal(Enumerable.Range(1,expected).Select(n=>n.ToString()),result.Rows.Where(r=>r.RowType==SpecificationRowType.Item).Select(r=>r.Position));
+        Assert.All(result.Rows,r=>Assert.True(r.Name.Length>0 && char.IsLetter(r.Name[0])));
+        Assert.All(result.Rows.Where(r=>r.RowType==SpecificationRowType.SectionHeader),r=>Assert.Empty(r.Position));
         Assert.DoesNotContain(result.Rows,r=>r.Name.Contains("Разраб.") || r.TypeMark.Contains("Кол.уч."));
         if (filename.Contains('1'))
         {
-            Assert.Contains("индивидуальной разработки",result.Rows.First(r=>r.Position=="РП").Name);
-            Assert.Contains(result.Rows,r=>r.Position=="ШУ1, ШУ3" && r.Name.Contains("коробками испытательными"));
+            Assert.Contains("индивидуальной разработки",result.Rows.First(r=>r.SourceSheet=="Лист1" && r.SourceRow==18).Name);
+            Assert.Contains(result.Rows,r=>r.SourceSheet=="Лист1" && r.SourceRow==57 && r.Name.Contains("коробками испытательными"));
             Assert.DoesNotContain(result.Rows.Where(r=>r.RowType==SpecificationRowType.Item),r=>r.Name.Contains("Подстанция укомплектовывается") || r.Name.Contains("Кабели для монтажа"));
-            Assert.All(result.Rows.Where(r=>r.Name.StartsWith("3 Кабель контрольный")),r=>Assert.Contains("газовыделением:",r.Name));
+            var cableVariants=result.Rows.Where(r=>r.SourceSheet=="Лист6" && r.SourceRow is 60 or 63).ToList();
+            Assert.Equal(2,cableVariants.Count);
+            Assert.All(cableVariants,r=>Assert.Contains("газовыделением:",r.Name));
         }
         else
         {

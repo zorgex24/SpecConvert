@@ -3,3 +3,5 @@
 .vs/
 outputs/
 *.user
+docs/*.xlsx
+docs/source-inspection.txt

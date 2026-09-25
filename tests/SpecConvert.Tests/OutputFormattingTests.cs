@@ -46,9 +46,9 @@ public sealed class OutputFormattingTests
         {
             new ExcelExporter().Export(file,[edited,new(){Name="Раздел",RowType=SpecificationRowType.SectionHeader},new(){Position="7",Name="Пустая",Quantity=null},new(){Position="9",Name="5. Шкаф",Quantity=0d}]);
             using var book=new XLWorkbook(file); var sheet=book.Worksheet(1);
-            Assert.Equal("1",sheet.Cell(2,1).GetString()); Assert.Equal("Кабель 1х2х0,5",sheet.Cell(2,2).GetString());
-            Assert.True(sheet.Cell(3,1).IsEmpty()); Assert.True(sheet.Cell(4,1).IsEmpty());
-            Assert.Equal("2",sheet.Cell(5,1).GetString()); Assert.Equal("Шкаф",sheet.Cell(5,2).GetString());
+            Assert.Equal("1",sheet.Cell(3,1).GetString()); Assert.Equal("Кабель 1х2х0,5",sheet.Cell(3,2).GetString());
+            Assert.True(sheet.Cell(4,1).IsEmpty()); Assert.True(sheet.Cell(5,1).IsEmpty());
+            Assert.Equal("2",sheet.Cell(6,1).GetString()); Assert.Equal("Шкаф",sheet.Cell(6,2).GetString());
             Assert.Equal("99",edited.Position); Assert.Equal("42. Кабель 1х2х0,5",edited.Name);
         }
         finally { File.Delete(file); }

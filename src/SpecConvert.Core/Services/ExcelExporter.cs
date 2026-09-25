@@ -12,8 +12,12 @@ public sealed class ExcelExporter
         if (!Path.GetExtension(path).Equals(".xlsx", StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("Выберите выходной файл .xlsx.");
         using var book = new XLWorkbook();
         var sheet = book.AddWorksheet("Спецификация");
-        for (int i = 0; i < Headers.Length; i++) sheet.Cell(1, i + 1).Value = Headers[i];
-        int row = 2;
+        for (int i = 0; i < Headers.Length; i++)
+        {
+            sheet.Cell(1, i + 1).Value = Headers[i];
+            sheet.Cell(2, i + 1).Value = i + 1;
+        }
+        int row = 3;
         int position = 0;
         foreach (var item in rows)
         {
@@ -50,15 +54,18 @@ public sealed class ExcelExporter
         range.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
         range.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
         range.Style.Font.FontName = "Calibri"; range.Style.Font.FontSize = 11;
-        sheet.Range(1, 1, 1, 9).Style.Font.Bold = true;
-        sheet.Range(1, 1, 1, 9).Style.Fill.BackgroundColor = XLColor.FromHtml("D5E2F2");
+        sheet.Range(1, 1, 2, 9).Style.Font.Bold = true;
+        sheet.Range(1, 1, 2, 9).Style.Fill.BackgroundColor = XLColor.FromHtml("D5E2F2");
+        sheet.Range(2, 1, 2, 9).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        sheet.Range(2, 1, 2, 9).Style.NumberFormat.Format = "0";
         for (int r = 1; r < row; r++)
         {
             double lines = Enumerable.Range(1, 9).Max(c => Math.Ceiling(sheet.Cell(r, c).GetString().Length / (widths[c - 1] * .85)));
             sheet.Row(r).Height = Math.Clamp(lines * 16 + 8, 26, 409);
         }
-        sheet.SheetView.FreezeRows(1);
-        sheet.Range(1, 1, row - 1, 9).SetAutoFilter();
+        sheet.SheetView.FreezeRows(2);
+        // The numbering row is the filter header so it is never sorted with data.
+        sheet.Range(2, 1, row - 1, 9).SetAutoFilter();
         // Save beside the destination, then replace atomically; a failed save leaves the old file intact.
         string full = Path.GetFullPath(path), temp = Path.Combine(Path.GetDirectoryName(full)!, $".specconvert-{Guid.NewGuid():N}.xlsx");
         try { book.SaveAs(temp); File.Move(temp, full, true); }

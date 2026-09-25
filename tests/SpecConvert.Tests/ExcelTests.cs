@@ -22,7 +22,7 @@ public sealed class ExcelTests
             using var book = new XLWorkbook(file);
             foreach (int column in new[] { 7, 8 })
             {
-                var cell = book.Worksheet(1).Cell(2,column);
+                var cell = book.Worksheet(1).Cell(3,column);
                 Assert.Equal(XLDataType.Number,cell.DataType);
                 Assert.Equal(expected,cell.GetFormattedString(System.Globalization.CultureInfo.GetCultureInfo("ru-RU")));
             }
@@ -37,8 +37,16 @@ public sealed class ExcelTests
         {
             new ExcelExporter().Export(file,[new() { RowType=SpecificationRowType.SectionHeader,Name="Материалы" }, new() { Position="Т1, Т2",Name="Исправленное имя",Quantity="12,5",UnitWeightKg=null,Note="=НЕ ФОРМУЛА" }]);
             using var book = new XLWorkbook(file); var s = book.Worksheet(1);
-            Assert.Equal("Материалы",s.Cell(2,2).GetString()); Assert.Equal("Исправленное имя",s.Cell(3,2).GetString());
-            Assert.Equal(12.5,s.Cell(3,7).GetDouble()); Assert.True(s.Cell(3,8).IsEmpty()); Assert.False(s.Cell(3,9).HasFormula);
+            for (int col = 1; col <= 9; col++)
+            {
+                Assert.Equal(ExcelExporter.Headers[col-1],s.Cell(1,col).GetString());
+                Assert.Equal(XLDataType.Number,s.Cell(2,col).DataType);
+                Assert.Equal(col,s.Cell(2,col).GetDouble());
+            }
+            Assert.Equal(2,s.SheetView.SplitRow);
+            Assert.Equal(2,s.AutoFilter.Range.RangeAddress.FirstAddress.RowNumber);
+            Assert.Equal("Материалы",s.Cell(3,2).GetString()); Assert.Equal("Исправленное имя",s.Cell(4,2).GetString());
+            Assert.Equal(12.5,s.Cell(4,7).GetDouble()); Assert.True(s.Cell(4,8).IsEmpty()); Assert.False(s.Cell(4,9).HasFormula);
             Assert.Empty(s.MergedRanges); Assert.Equal(9,s.LastColumnUsed()!.ColumnNumber());
         }
         finally { File.Delete(file); }

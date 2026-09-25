@@ -106,8 +106,8 @@ public sealed class ParserTests
         string output = Path.Combine(dir,Path.GetFileNameWithoutExtension(filename)+" — результат.xlsx");
         new ExcelExporter().Export(output,result.Rows);
         using var exported = new XLWorkbook(output);
-        Assert.Equal(result.Rows.Count+1,exported.Worksheet(1).LastRowUsed()!.RowNumber());
-        Assert.Equal(XLDataType.Number,exported.Worksheet(1).CellsUsed().First(c=>c.Address.ColumnNumber==7 && c.Address.RowNumber>1).DataType);
+        Assert.Equal(result.Rows.Count+2,exported.Worksheet(1).LastRowUsed()!.RowNumber());
+        Assert.Equal(XLDataType.Number,exported.Worksheet(1).CellsUsed().First(c=>c.Address.ColumnNumber==7 && c.Address.RowNumber>2).DataType);
         File.WriteAllLines(Path.ChangeExtension(output,".log"),result.Log);
     }
     private static string FindRoot()

@@ -1,0 +1,61 @@
+using ClosedXML.Excel;
+using SpecConvert.Core.Models;
+using SpecConvert.Core.Services;
+using Xunit;
+
+namespace SpecConvert.Tests;
+public sealed class ExcelTests
+{
+    [Fact] public void ExportKeepsEditsNumbersBlanksAndSectionOrder()
+    {
+        string file = Path.Combine(Path.GetTempPath(),Guid.NewGuid()+".xlsx");
+        try
+        {
+            new ExcelExporter().Export(file,[new() { RowType=SpecificationRowType.SectionHeader,Name="Материалы" }, new() { Position="Т1, Т2",Name="Исправленное имя",Quantity="12,5",UnitWeightKg=null,Note="=НЕ ФОРМУЛА" }]);
+            using var book = new XLWorkbook(file); var s = book.Worksheet(1);
+            Assert.Equal("Материалы",s.Cell(2,2).GetString()); Assert.Equal("Исправленное имя",s.Cell(3,2).GetString());
+            Assert.Equal(12.5,s.Cell(3,7).GetDouble()); Assert.True(s.Cell(3,8).IsEmpty()); Assert.False(s.Cell(3,9).HasFormula);
+            Assert.Empty(s.MergedRanges); Assert.Equal(9,s.LastColumnUsed()!.ColumnNumber());
+        }
+        finally { File.Delete(file); }
+    }
+    [Fact] public void ReaderUsesCachedFormulaAndMergedOrigin()
+    {
+        string file = Path.Combine(Path.GetTempPath(),Guid.NewGuid()+".xlsx");
+        try
+        {
+            using (var book = new XLWorkbook())
+            {
+                var s = book.AddWorksheet("Формулы");
+                for(int i=0;i<9;i++) s.Cell(1,i+1).Value=ExcelExporter.Headers[i];
+                s.Cell(2,2).Value="Изделие"; s.Cell(2,7).FormulaA1="2+3"; s.Range("G2:G4").Merge();
+                book.SaveAs(file,new SaveOptions { EvaluateFormulasBeforeSaving=true });
+            }
+            var sheets = new ExcelReader().Read(file);
+            Assert.Equal(5d,new CellValueResolver(sheets[0]).Resolve(4,7)!.Value);
+            var result = new SpecificationParser().Parse(sheets); Assert.Equal(5d,Assert.Single(result.Rows).Quantity);
+        }
+        finally { File.Delete(file); }
+    }
+    [Fact] public void FailedExportDoesNotReplaceExistingDestination()
+    {
+        string file = Path.Combine(Path.GetTempPath(),Guid.NewGuid()+".xlsx");
+        try
+        {
+            File.WriteAllText(file,"original");
+            using(var locked = File.Open(file,FileMode.Open,FileAccess.Read,FileShare.None))
+            {
+                var error = Record.Exception(()=>new ExcelExporter().Export(file,[new(){Name="test",Quantity=1d}]));
+                Assert.True(error is IOException or UnauthorizedAccessException);
+            }
+            Assert.Equal("original",File.ReadAllText(file));
+        }
+        finally { File.Delete(file); }
+    }
+    [Fact] public void CorruptedWorkbookRaisesControlledServiceError()
+    {
+        string file=Path.Combine(Path.GetTempPath(),Guid.NewGuid()+".xlsx");
+        try { File.WriteAllText(file,"not a workbook"); Assert.ThrowsAny<Exception>(()=>new ExcelReader().Read(file)); }
+        finally { File.Delete(file); }
+    }
+}

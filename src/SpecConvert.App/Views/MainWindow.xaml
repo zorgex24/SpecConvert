@@ -1,0 +1,26 @@
+<Window x:Class="SpecConvert.App.Views.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="SpecConvert — конвертер спецификаций" Width="1400" Height="850" MinWidth="920" MinHeight="600" Background="#F5F7FA" FontFamily="Segoe UI" FontSize="13">
+ <Grid Margin="20">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="130"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <StackPanel Margin="0,0,0,12"><TextBlock Text="Конвертер Excel-спецификаций" FontSize="25" FontWeight="SemiBold"/><TextBlock Text="Выберите книгу, проверьте распознанные позиции и сохраните таблицу." Margin="0,6,0,0" Foreground="#4B5563"/></StackPanel>
+  <Grid Grid.Row="1" IsEnabled="{Binding CanEdit}"><Grid.ColumnDefinitions><ColumnDefinition Width="90"/><ColumnDefinition Width="*"/><ColumnDefinition Width="160"/></Grid.ColumnDefinitions><TextBlock Text="Исходник" VerticalAlignment="Center"/><TextBox Grid.Column="1" Text="{Binding InputPath, UpdateSourceTrigger=PropertyChanged}"/><Button Grid.Column="2" Content="Выбрать файл" Command="{Binding BrowseInputCommand}"/></Grid>
+  <Grid Grid.Row="2" IsEnabled="{Binding CanEdit}" Margin="0,6,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="90"/><ColumnDefinition Width="*"/><ColumnDefinition Width="160"/></Grid.ColumnDefinitions><TextBlock Text="Результат" VerticalAlignment="Center"/><TextBox Grid.Column="1" Text="{Binding OutputPath, UpdateSourceTrigger=PropertyChanged}"/><Button Grid.Column="2" Content="Выбрать путь" Command="{Binding BrowseOutputCommand}"/></Grid>
+  <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,10"><Button Content="Преобразовать" Command="{Binding ConvertCommand}" Background="#D5E2F2"/><Button Content="Сохранить XLSX" Command="{Binding ExportCommand}"/><Button Content="Открыть результат" Command="{Binding OpenCommand}"/></StackPanel>
+  <DataGrid x:Name="PreviewGrid" Grid.Row="4" ItemsSource="{Binding Rows}" IsEnabled="{Binding CanEdit}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" EnableRowVirtualization="True" FrozenColumnCount="1" HeadersVisibility="Column" RowHeight="48" HorizontalGridLinesBrush="#DCE2EB" VerticalGridLinesBrush="#DCE2EB">
+   <DataGrid.RowStyle><Style TargetType="DataGridRow"><Setter Property="ToolTip"><Setter.Value><MultiBinding StringFormat="{}{0} / строка {1}"><Binding Path="SourceSheet"/><Binding Path="SourceRow"/></MultiBinding></Setter.Value></Setter><Style.Triggers><DataTrigger Binding="{Binding RowType}" Value="SectionHeader"><Setter Property="Background" Value="#E7EDF5"/><Setter Property="FontWeight" Value="Bold"/></DataTrigger></Style.Triggers></Style></DataGrid.RowStyle>
+   <DataGrid.Columns>
+    <DataGridTextColumn Header="Поз." Binding="{Binding Position}" Width="85"/>
+    <DataGridTextColumn Header="Наименование" Binding="{Binding Name}" Width="350"/>
+    <DataGridTextColumn Header="Тип / марка" Binding="{Binding TypeMark}" Width="270"/>
+    <DataGridTextColumn Header="Код" Binding="{Binding ProductCode}" Width="120"/>
+    <DataGridTextColumn Header="Поставщик" Binding="{Binding Supplier}" Width="160"/>
+    <DataGridTextColumn Header="Ед." Binding="{Binding Unit}" Width="65"/>
+    <DataGridTextColumn Header="Кол." Binding="{Binding Quantity}" Width="80"/>
+    <DataGridTextColumn Header="Масса" Binding="{Binding UnitWeightKg}" Width="80"/>
+    <DataGridTextColumn Header="Примечание" Binding="{Binding Note}" Width="250"/>
+   </DataGrid.Columns>
+  </DataGrid>
+  <TextBlock Grid.Row="5" Text="{Binding Summary}" Margin="0,10" FontWeight="SemiBold"/>
+  <TextBox Grid.Row="6" Text="{Binding Log, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12"/>
+  <StackPanel Grid.Row="7"><ProgressBar Height="4" Margin="0,10,0,6" IsIndeterminate="{Binding IsBusy}"/><TextBlock Text="{Binding Status}" TextWrapping="Wrap"/></StackPanel>
+ </Grid>
+</Window>

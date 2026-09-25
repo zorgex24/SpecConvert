@@ -30,6 +30,13 @@ public sealed class ExcelExporter
                 else if (values[col] is decimal dec) cell.Value = (double)dec;
                 else if (col is 6 or 7 && double.TryParse(values[col]!.ToString()!.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out double number) && double.IsFinite(number)) cell.Value = number;
                 else cell.Value = TextNormalizer.Normalize(values[col]!.ToString());
+                if (col is 6 or 7 && cell.DataType == XLDataType.Number)
+                {
+                    double numericValue = cell.GetDouble();
+                    cell.Style.NumberFormat.Format = numericValue == Math.Truncate(numericValue)
+                        ? "0"
+                        : "0.###############";
+                }
             }
             if (item.RowType == SpecificationRowType.SectionHeader)
             { sheet.Range(row, 1, row, 9).Style.Font.Bold = true; sheet.Range(row, 1, row, 9).Style.Fill.BackgroundColor = XLColor.FromHtml("E7EDF5"); }
@@ -45,7 +52,6 @@ public sealed class ExcelExporter
         range.Style.Font.FontName = "Calibri"; range.Style.Font.FontSize = 11;
         sheet.Range(1, 1, 1, 9).Style.Font.Bold = true;
         sheet.Range(1, 1, 1, 9).Style.Fill.BackgroundColor = XLColor.FromHtml("D5E2F2");
-        sheet.Columns(7, 8).Style.NumberFormat.Format = "0.###############";
         for (int r = 1; r < row; r++)
         {
             double lines = Enumerable.Range(1, 9).Max(c => Math.Ceiling(sheet.Cell(r, c).GetString().Length / (widths[c - 1] * .85)));

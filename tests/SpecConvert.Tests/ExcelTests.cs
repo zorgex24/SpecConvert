@@ -6,6 +6,30 @@ using Xunit;
 namespace SpecConvert.Tests;
 public sealed class ExcelTests
 {
+    [Theory]
+    [InlineData("13", "13")]
+    [InlineData("0", "0")]
+    [InlineData("-2", "-2")]
+    [InlineData("13,0", "13")]
+    [InlineData("12,5", "12,5")]
+    [InlineData("0,125", "0,125")]
+    public void ExportDisplaysNumbersWithoutTrailingDecimalSeparator(string value, string expected)
+    {
+        string file = Path.Combine(Path.GetTempPath(),Guid.NewGuid()+".xlsx");
+        try
+        {
+            new ExcelExporter().Export(file,[new() { Name="Изделие", Quantity=value, UnitWeightKg=value }]);
+            using var book = new XLWorkbook(file);
+            foreach (int column in new[] { 7, 8 })
+            {
+                var cell = book.Worksheet(1).Cell(2,column);
+                Assert.Equal(XLDataType.Number,cell.DataType);
+                Assert.Equal(expected,cell.GetFormattedString(System.Globalization.CultureInfo.GetCultureInfo("ru-RU")));
+            }
+        }
+        finally { File.Delete(file); }
+    }
+
     [Fact] public void ExportKeepsEditsNumbersBlanksAndSectionOrder()
     {
         string file = Path.Combine(Path.GetTempPath(),Guid.NewGuid()+".xlsx");
